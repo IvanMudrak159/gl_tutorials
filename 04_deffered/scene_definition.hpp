@@ -14,51 +14,32 @@
 inline SimpleScene createCottageScene(MaterialFactory& aMaterialFactory, GeometryFactory& aGeometryFactory) {
 	SimpleScene scene;
 	{
-		auto cottage = std::make_shared<LoadedMeshObject>("./data/geometry/cottage.obj");
-		cottage->addMaterial(
+		/*
+		auto mask = std::make_shared<LoadedMeshObject>("./data/geometry/mask.obj");
+		mask->addMaterial(
 			"solid",
 			MaterialParameters(
 				"material_deffered",
 				RenderStyle::Solid,
 				{
-					{ "u_diffuseTexture", TextureInfo("cottage/cottageDif.jpg") },
+					{ "u_diffuseTexture", TextureInfo("alb5.png") },
 				}
 				)
 		);
-		cottage->prepareRenderData(aMaterialFactory, aGeometryFactory);
-		scene.addObject(cottage);
-	}
-	{
-		auto ground = std::make_shared<LoadedMeshObject>("./data/geometry/ground.obj");
-		ground->addMaterial(
+		*/
+		auto mask = std::make_shared<LoadedMeshObject>("./data/geometry/mask.obj");
+		mask->addMaterial(
 			"solid",
 			MaterialParameters(
-				"material_deffered",
+				"solid_color",
 				RenderStyle::Solid,
 				{
-					{ "u_diffuseTexture", TextureInfo("cottage/groundDif.png") },
-				}
-				)
+					{ "u_solidColor", glm::vec4(0.0, 0.0, 1.0, 1.0)}
+				})
 		);
-		ground->prepareRenderData(aMaterialFactory, aGeometryFactory);
-		scene.addObject(ground);
+		mask->setPosition(glm::vec3(0.0f, 0.0f, -20.0f));
+		mask->prepareRenderData(aMaterialFactory, aGeometryFactory);
+		scene.addObject(mask);
 	}
-	{
-		auto oak = std::make_shared<LoadedMeshObject>("./data/geometry/oak.obj");
-		oak->addMaterial(
-			"solid",
-			MaterialParameters(
-				"material_deffered",
-				RenderStyle::Solid,
-				{
-					{ "u_diffuseTexture", TextureInfo("cottage/OakDif.png") },
-				}
-				)
-		);
-		oak->prepareRenderData(aMaterialFactory, aGeometryFactory);
-		scene.addObject(oak);
-	}
-
-
 	return scene;
 }

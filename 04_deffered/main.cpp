@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <02_simple3d/scene_definition.hpp>
 
 #include "ogl_resource.hpp"
 #include "error_handling.hpp"
@@ -91,10 +92,11 @@ int main() {
 		renderer.initialize(window.size()[0], window.size()[1]);
 		window.runLoop([&] {
 			renderer.shadowMapPass(scenes[config.currentSceneIdx], light);
-			 // renderer.shadowMapPass(scenes[config.currentSceneIdx], camera);
+			// renderer.shadowMapPass(scenes[config.currentSceneIdx], camera);
 
 			renderer.clear();
 			renderer.geometryPass(scenes[config.currentSceneIdx], camera, RenderOptions{"solid"});
+			renderer.ssaoPass(scenes[config.currentSceneIdx], camera, RenderOptions{ "solid" });
 			renderer.compositingPass(light);
 		});
 	} catch (ShaderCompilationError &exc) {

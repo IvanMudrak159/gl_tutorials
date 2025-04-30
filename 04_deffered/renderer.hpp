@@ -8,6 +8,7 @@
 #include "shadowmap_framebuffer.hpp"
 #include "ogl_material_factory.hpp"
 #include "ogl_geometry_factory.hpp"
+#include "SSAONoiseTexture.h"
 
 class QuadRenderer {
 public:
@@ -53,6 +54,10 @@ public:
 		// 	mMaterialFactory.getShaderProgram("solid_color"));
 		mShadowMapShader = std::static_pointer_cast<OGLShaderProgram>(
 			mMaterialFactory.getShaderProgram("shadowmap"));
+		mSSAOShader = std::static_pointer_cast<OGLShaderProgram>(
+			mMaterialFactory.getShaderProgram("ssao"));
+		mDebugShader = std::static_pointer_cast<OGLShaderProgram>(
+			mMaterialFactory.getShaderProgram("debug"));
 	}
 
 	void initialize(int aWidth, int aHeight) {
@@ -60,15 +65,21 @@ public:
 		mHeight = aHeight;
 		GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 
+		mSSAOFrameBuffer = std::make_unique<Framebuffer>(aWidth, aHeight, getColorNormalPositionAttachments());
 		mFramebuffer = std::make_unique<Framebuffer>(aWidth, aHeight, getColorNormalPositionAttachments());
-		mShadowmapFramebuffer = std::make_unique<Framebuffer>(600, 600, getSingleColorAttachment());
-		// mShadowmapFramebuffer = std::make_unique<ShadowmapFramebuffer>(600, 600);
+		// mShadowmapFramebuffer = std::make_unique<Framebuffer>(600, 600, getSingleColorAttachment());
+		mShadowmapFramebuffer = std::make_unique<ShadowmapFramebuffer>(600, 600);
 		mCompositingParameters = {
 			{ "u_diffuse", TextureInfo("diffuse", mFramebuffer->getColorAttachment(0)) },
 			{ "u_normal", TextureInfo("diffuse", mFramebuffer->getColorAttachment(1)) },
 			{ "u_position", TextureInfo("diffuse", mFramebuffer->getColorAttachment(2)) },
-			// { "u_shadowMap", TextureInfo("shadowMap", mShadowmapFramebuffer->getDepthMap()) },
-			{ "u_shadowMap", TextureInfo("shadowMap", mShadowmapFramebuffer->getColorAttachment(0)) },
+			{ "u_shadowMap", TextureInfo("shadowMap", mShadowmapFramebuffer->getDepthMap()) },
+			{ "u_ssaoMap", TextureInfo("ssaoMap", mSSAOFrameBuffer->getColorAttachment(0)) },
+			// { "u_shadowMap", TextureInfo("shadowMap", mShadowmapFramebuffer->getColorAttachment(0)) },
+		};
+		mDebugParameters = {
+			{"u_diffuse", TextureInfo("diffuse", mFramebuffer->getColorAttachment(0)) },
+			{"u_ssaoMap", TextureInfo("ssaoMap", mSSAOFrameBuffer->getColorAttachment(0)) }
 		};
 	}
 
@@ -120,6 +131,57 @@ public:
 		mFramebuffer->unbind();
 	}
 
+	template<typename TScene, typename TCamera>
+	void ssaoPass(const TScene& aScene, const TCamera& aCamera, RenderOptions aRenderOptions)
+	{
+		GL_CHECK(glEnable(GL_DEPTH_TEST));
+		GL_CHECK(glViewport(0, 0, mWidth, mHeight));
+		mSSAOFrameBuffer->bind();
+		mSSAOFrameBuffer->setDrawBuffers();
+
+		SSAONoiseTexture ssaoNoise(16);
+		GLuint noiseTexture = ssaoNoise.getTexture();
+
+
+		MaterialParameterValues fallbackParameters;
+		fallbackParameters["u_projMat"] = aCamera.getProjectionMatrix();
+		fallbackParameters["u_viewMat"] = aCamera.getViewMatrix();
+		fallbackParameters["gPosition"] = TextureInfo("diffuse", mFramebuffer->getColorAttachment(2));
+		fallbackParameters["gNormal"] = TextureInfo("diffuse", mFramebuffer->getColorAttachment(1));
+		// fallbackParameters["noiseTexture"] = noiseTexture;
+		fallbackParameters["u_radius"] = 0.5f;
+		fallbackParameters["u_bias"] = 0.025f;
+		fallbackParameters["u_intensity"] = 1.0f;
+		std::vector<RenderData> renderData;
+		for (const auto& object : aScene.getObjects()) {
+			auto data = object.getRenderData(aRenderOptions);
+			if (data) {
+				renderData.push_back(data.value());
+			}
+		}
+
+		mSSAOShader->use();
+
+		for (const auto& data : renderData) {
+			const glm::mat4& modelMat = data.modelMat;
+			const MaterialParameters& params = data.mMaterialParams;
+			const OGLShaderProgram& shaderProgram = static_cast<const OGLShaderProgram&>(data.mShaderProgram);
+			const OGLGeometry& geometry = static_cast<const OGLGeometry&>(data.mGeometry);
+
+			fallbackParameters["u_modelMat"] = modelMat;
+			fallbackParameters["u_normalMat"] = glm::mat3(modelMat);
+
+			//shaderProgram.use();
+			//shaderProgram.setMaterialParameters(params.mParameterValues, fallbackParameters);
+
+			mSSAOShader->setMaterialParameters({});
+
+			geometry.bind();
+			geometry.draw();
+		}
+		mSSAOFrameBuffer->unbind();
+	}
+
 	template<typename TLight>
 	void compositingPass(const TLight &aLight) {
 		GL_CHECK(glDisable(GL_DEPTH_TEST));
@@ -127,7 +189,8 @@ public:
 		mCompositingParameters["u_lightPos"] = aLight.getPosition();
 		mCompositingParameters["u_lightMat"] = aLight.getViewMatrix();
 		mCompositingParameters["u_lightProjMat"] = aLight.getProjectionMatrix();
-		mQuadRenderer.render(*mCompositingShader, mCompositingParameters);
+		//mQuadRenderer.render(*mCompositingShader, mCompositingParameters);
+		mQuadRenderer.render(*mDebugShader, mDebugParameters);
 	}
 
 	template<typename TScene, typename TLight>
@@ -179,11 +242,15 @@ protected:
 	int mWidth = 100;
 	int mHeight = 100;
 	std::unique_ptr<Framebuffer> mFramebuffer;
-	std::unique_ptr<Framebuffer> mShadowmapFramebuffer;
-	// std::unique_ptr<ShadowmapFramebuffer> mShadowmapFramebuffer;
+	//std::unique_ptr<Framebuffer> mShadowmapFramebuffer;
+	std::unique_ptr<ShadowmapFramebuffer> mShadowmapFramebuffer;
+	std::unique_ptr<Framebuffer> mSSAOFrameBuffer;
 	MaterialParameterValues mCompositingParameters;
+	MaterialParameterValues mDebugParameters;
 	QuadRenderer mQuadRenderer;
 	std::shared_ptr<OGLShaderProgram> mCompositingShader;
+	std::shared_ptr<OGLShaderProgram> mDebugShader;
 	std::shared_ptr<OGLShaderProgram> mShadowMapShader;
+	std::shared_ptr<OGLShaderProgram> mSSAOShader;
 	OGLMaterialFactory &mMaterialFactory;
 };

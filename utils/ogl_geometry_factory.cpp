@@ -74,17 +74,17 @@ std::shared_ptr<AGeometry> OGLGeometryFactory::getPlaneOutline() {
 	return geometry;
 }
 
-std::shared_ptr<AGeometry> OGLGeometryFactory::loadMesh(fs::path aMeshPath, RenderStyle aRenderStyle) {
-	aMeshPath = fs::canonical(aMeshPath);
-	auto it = mObjects.find(aMeshPath.string());
-	if (it != mObjects.end()) {
-		return it->second;
+	std::shared_ptr<AGeometry> OGLGeometryFactory::loadMesh(fs::path aMeshPath, RenderStyle aRenderStyle) {
+		aMeshPath = fs::canonical(aMeshPath);
+		auto it = mObjects.find(aMeshPath.string());
+		if (it != mObjects.end()) {
+			return it->second;
+		}
+		auto mesh = loadOBJ(aMeshPath);
+
+		auto geometry = std::make_shared<OGLGeometry>(generateMeshBuffersNormTex(mesh));
+
+		mObjects[aMeshPath.string()] = geometry;
+		return geometry;
 	}
-	auto mesh = loadOBJ(aMeshPath);
-
-	auto geometry = std::make_shared<OGLGeometry>(generateMeshBuffersNormTex(mesh));
-
-	mObjects[aMeshPath.string()] = geometry;
-	return geometry;
-}
 
