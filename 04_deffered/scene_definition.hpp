@@ -14,19 +14,18 @@
 inline SimpleScene createCottageScene(MaterialFactory& aMaterialFactory, GeometryFactory& aGeometryFactory) {
 	SimpleScene scene;
 	{
-		/*
-		auto mask = std::make_shared<LoadedMeshObject>("./data/geometry/mask.obj");
+		auto mask = std::make_shared<LoadedMeshObject>("./data/geometry/buddha.obj");
 		mask->addMaterial(
 			"solid",
 			MaterialParameters(
 				"material_deffered",
 				RenderStyle::Solid,
 				{
-					{ "u_diffuseTexture", TextureInfo("alb5.png") },
+					{ "u_diffuseTexture", TextureInfo("buddha.png") },
 				}
 				)
 		);
-		*/
+		/*
 		auto mask = std::make_shared<LoadedMeshObject>("./data/geometry/mask.obj");
 		mask->addMaterial(
 			"solid",
@@ -37,7 +36,9 @@ inline SimpleScene createCottageScene(MaterialFactory& aMaterialFactory, Geometr
 					{ "u_solidColor", glm::vec4(0.0, 0.0, 1.0, 1.0)}
 				})
 		);
-		mask->setPosition(glm::vec3(0.0f, 0.0f, -20.0f));
+		*/
+		mask->setScale(glm::vec3(100, 100, 100));
+		mask->setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
 		mask->prepareRenderData(aMaterialFactory, aGeometryFactory);
 		scene.addObject(mask);
 	}

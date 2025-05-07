@@ -37,7 +37,8 @@ using MaterialParam = std::variant<
 				glm::mat3,
 				glm::mat4,
 				TextureInfo,
-				ArrayDescription
+				ArrayDescription,
+				std::vector<glm::vec3>
 				>;
 using MaterialParameterValues = std::map<std::string, MaterialParam>;
 

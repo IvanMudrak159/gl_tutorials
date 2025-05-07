@@ -50,7 +50,12 @@ inline int setUniform(const UniformInfo &aInfo, const MaterialParam &aParam, int
 				GL_CHECK(glUniform4fv(aInfo.location, 1, glm::value_ptr(arg)));
 			} else if constexpr (std::is_same_v<T, glm::mat3>) {
 				GL_CHECK(glUniformMatrix3fv(aInfo.location, 1, GL_FALSE, glm::value_ptr(arg)));
-			} else if constexpr (std::is_same_v<T, glm::mat4>) {
+			} else if constexpr (std::is_same_v<T, std::vector<glm::vec3>>) {
+				if (!arg.empty()) {
+					GL_CHECK(glUniform3fv(aInfo.location, static_cast<GLsizei>(arg.size()), glm::value_ptr(arg[0])));
+				}
+			}
+			else if constexpr (std::is_same_v<T, glm::mat4>) {
 				GL_CHECK(glUniformMatrix4fv(aInfo.location, 1, GL_FALSE, glm::value_ptr(arg)));
 			} else if constexpr (std::is_same_v<T, TextureInfo>) {
 				if (arg.textureData) {
