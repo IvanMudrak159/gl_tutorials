@@ -1,0 +1,3 @@
+geometry: branches
+vertex: branches
+fragment: solid_color

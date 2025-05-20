@@ -36,6 +36,11 @@ public:
 		rotation = rotationQuat * rotation;
 	}
 
+	void yawGlobal(float angle) {
+		glm::quat rotationQuat = glm::angleAxis(angle, glm::vec3(0.0f, 1.0f, 0.0f));
+		rotation = rotationQuat * rotation;
+	}
+
 	void pitch(float angle) {
 		glm::quat rotationQuat = glm::angleAxis(angle, getRightVector());
 		rotation = rotationQuat * rotation;
